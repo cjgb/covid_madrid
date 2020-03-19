@@ -6,4 +6,4 @@ La motivación para realizarlo se explica [en mi blog](https://www.datanalytics.
 
 Los resultados de la ejecución del modelo son:
 
-
+![](https://github.com/cjgb/covid_madrid/blob/master/Rplot.png?raw=true)
