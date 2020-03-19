@@ -1,10 +1,9 @@
 library(rstan)
 library(reshape2)
 library(plyr)
-
 library(ggplot2)
 
-
+pop_madrid <- 6.6e6
 
 dat <- read.csv("https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_fallecidos.csv")
 dat <- melt(dat, id.vars = c("cod_ine", "CCAA"))
@@ -21,10 +20,17 @@ colnames(madrid) <- c("dia", "defs")
 tmp <- data.frame(dia = -30:-1, defs = 0)
 
 madrid <- rbind(tmp, madrid)
+defunciones_diarias <- diff(madrid$defs)
+
+madrid <- data.frame(dia = madrid$dia[-1], defs = defunciones_diarias)
 
 
 fit <- stan(file = "stan.stan",
-            data = list(N = nrow(madrid), dia0 = which(madrid$dia == 0), dia = madrid$dia, defs = madrid$defs), 
+            data = list(N = nrow(madrid), 
+                        dia0 = which(madrid$dia == 0), 
+                        pop = pop_madrid,                        
+                        dia = madrid$dia, 
+                        defs = madrid$defs), 
             iter = 10000, warmup = 2000, 
             chains = 1, thin = 10)
 
@@ -44,3 +50,6 @@ ggplot(casos, aes(x = fecha, y = casos, group = variable)) +
     geom_line(alpha = 0.3) + 
     xlab("fecha") + ylab("casos") +
     ggtitle("Casos de coronavirus en Madrid\n(¡Resultado de un modelo muy crudo y\n casi seguro con errores!)")
+
+
+tmp <- casos[casos$fecha == max(casos$fecha),]
