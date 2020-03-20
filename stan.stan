@@ -10,7 +10,7 @@ parameters {
   real<lower = 0, upper = 1000> casos_0; 
   vector<lower = 0>[N] contagios;
   real<lower = 0, upper = 3> r0;  //priori cutre sobre r0, infectados diarios que genera un caso
-  real<lower = 0, upper = .02> letalidad;
+  real<lower = 0, upper = .1> letalidad;
   real<lower = 0> sigma_contagios;
   real<lower = 0> sigma_defs;
 }
@@ -30,7 +30,7 @@ model {
       contagiadores = contagiadores + contagios[j];
     }
     
-    contagios[i] ~ normal((pop - contagiadores) * r0, sigma_contagios);
+    contagios[i] ~ normal((1 - casos[i-1] / pop) * contagiadores * r0, sigma_contagios);
     casos[i] = casos[i-1] + contagios[i];
   }
   

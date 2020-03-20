@@ -31,7 +31,7 @@ fit <- stan(file = "stan.stan",
                         pop = pop_madrid,                        
                         dia = madrid$dia, 
                         defs = madrid$defs), 
-            iter = 10000, warmup = 2000, 
+            iter = 20000, warmup = 5000, 
             chains = 1, thin = 10)
 
 res <- as.data.frame(fit)
@@ -47,9 +47,13 @@ casos <- ddply(contagios, .(variable), transform, casos = cumsum(value))
 
 
 ggplot(casos, aes(x = fecha, y = casos, group = variable)) +
-    geom_line(alpha = 0.3) + 
+    geom_line(alpha = 0.01) + 
     xlab("fecha") + ylab("casos") +
     ggtitle("Casos de coronavirus en Madrid\n(¡Resultado de un modelo muy crudo y\n casi seguro con errores!)")
 
 
 tmp <- casos[casos$fecha == max(casos$fecha),]
+hist(tmp$casos, breaks = 30, main = "Casos 'hoy'", col = "steelblue", xlab = "casos", freq = FALSE)
+
+tmp <- res[, c("casos_0", "r0", "letalidad")]
+plot(tmp)
