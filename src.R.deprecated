@@ -5,13 +5,13 @@ library(ggplot2)
 
 pop_madrid <- 6.6e6
 
-dat <- read.csv("https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_fallecidos.csv")
-dat <- melt(dat, id.vars = c("cod_ine", "CCAA"))
-dat$fecha <- as.Date(dat$variable, format = "X%d.%m.%Y")
+defs <- read.csv("https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_fallecidos.csv")
+defs <- melt(defs, id.vars = c("cod_ine", "CCAA"))
+defs$fecha <- as.Date(defs$variable, format = "X%d.%m.%Y")
 
-fecha_ini <- min(dat$fecha)
+fecha_ini <- min(defs$fecha)
 
-madrid <- dat[dat$CCAA == "Madrid",]
+madrid <- defs[defs$CCAA == "Madrid",]
 madrid$dia <- as.numeric(madrid$fecha - fecha_ini)
 
 madrid <- madrid[, c("dia", "value")]
@@ -32,7 +32,8 @@ fit <- stan(file = "stan.stan",
                         dia = madrid$dia, 
                         defs = madrid$defs), 
             iter = 20000, warmup = 5000, 
-            chains = 1, thin = 10)
+            chains = 4, thin = 10, cores = 4,
+            control = list(adapt_delta = 0.99))
 
 res <- as.data.frame(fit)
 
@@ -51,9 +52,36 @@ ggplot(casos, aes(x = fecha, y = casos, group = variable)) +
     xlab("fecha") + ylab("casos") +
     ggtitle("Casos de coronavirus en Madrid\n(¡Resultado de un modelo muy crudo y\n casi seguro con errores!)")
 
+ggsave("Rplot.png")
 
 tmp <- casos[casos$fecha == max(casos$fecha),]
-hist(tmp$casos, breaks = 30, main = "Casos 'hoy'", col = "steelblue", xlab = "casos", freq = FALSE)
+tmp$casos <- tmp$casos / 1000
+ggplot(tmp, aes(x = casos)) + 
+    geom_histogram(fill = "steelblue") + 
+    xlab("casos (miles)") +
+    ylab("número de simulaciones") +
+    ggtitle(paste0("casos estimados en ", Sys.Date()))
+
+ggsave("Rplot01.png")
+
+
+# just a check
+
+# ggplot(tmp, aes(x = log10(casos))) + 
+#     geom_histogram(fill = "steelblue") + 
+#     xlab("casos (miles)") +
+#     ylab("número de simulaciones") +
+#     ggtitle(paste0("casos estimados en ", Sys.Date()))
+
+# hist(tmp$casos, breaks = 30, main = "Casos 'hoy'", col = "steelblue", xlab = "casos", freq = FALSE)
+
+
 
 tmp <- res[, c("casos_0", "r0", "letalidad")]
 plot(tmp)
+
+
+traceplot(fit, pars = c("casos_0", "r0", "letalidad"))
+
+# evaluación del ajuste
+pairs(fit, pars = "contagios", include = FALSE)
